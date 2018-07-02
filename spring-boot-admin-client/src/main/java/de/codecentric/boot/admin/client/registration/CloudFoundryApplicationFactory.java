@@ -16,6 +16,7 @@
 
 package de.codecentric.boot.admin.client.registration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.codecentric.boot.admin.client.config.CloudFoundryApplicationProperties;
 import de.codecentric.boot.admin.client.config.InstanceProperties;
 import de.codecentric.boot.admin.client.registration.metadata.MetadataContributor;
@@ -24,6 +25,8 @@ import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointPr
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
 import org.springframework.boot.actuate.endpoint.web.PathMappedEndpoints;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
+
+import java.io.IOException;
 
 public class CloudFoundryApplicationFactory extends DefaultApplicationFactory {
     private final CloudFoundryApplicationProperties cfApplicationProperties;
@@ -41,11 +44,22 @@ public class CloudFoundryApplicationFactory extends DefaultApplicationFactory {
 
     @Override
     protected String getServiceBaseUrl() {
-        if (cfApplicationProperties.getUris().isEmpty()) {
+        String uri = cfApplicationProperties.getUris().get(0);
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            String vcapApplication = System.getenv("VCAP_APPLICATION");
+            String vcap_url = mapper.readTree(vcapApplication).get("uris").get(0).asText();
+            if (!vcap_url.isEmpty()) {
+                uri = vcap_url;
+            }
+        } catch (IOException e) {
             return null;
         }
 
-        String uri = cfApplicationProperties.getUris().get(0);
+        if (uri.isEmpty()) {
+            return null;
+        }
+
         return "http://" + uri;
     }
 }
