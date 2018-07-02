@@ -44,7 +44,12 @@ public class CloudFoundryApplicationFactory extends DefaultApplicationFactory {
 
     @Override
     protected String getServiceBaseUrl() {
+        if (cfApplicationProperties.getUris().isEmpty()) {
+            return null;
+        }
+
         String uri = cfApplicationProperties.getUris().get(0);
+
         try {
             ObjectMapper mapper = new ObjectMapper();
             String vcapApplication = System.getenv("VCAP_APPLICATION");
